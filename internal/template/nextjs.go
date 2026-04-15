@@ -91,7 +91,7 @@ func writePageTSX(dir string) error {
           own domain.
         </p>
 
-        <p className="text-sm text-foreground pt-4">
+        <p className="text-sm text-foreground">
           Developed by{" "}
           <a href="https://monolinie.com" target="_blank" rel="noopener noreferrer" className="hover:underline">
             Monolinie
