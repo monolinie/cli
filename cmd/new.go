@@ -165,7 +165,14 @@ func runNew(cmd *cobra.Command, args []string) error {
 	}
 	green.Println("  ✓ Environment variables set")
 
-	// Step 8: Create DNS record
+	// Step 8: Deploy application (before DNS so build runs while DNS propagates)
+	bold.Println("→ Deploying application...")
+	if err := dk.DeployApplication(app.ApplicationID); err != nil {
+		return fmt.Errorf("deploy: %w", err)
+	}
+	green.Println("  ✓ Deployment started")
+
+	// Step 9: Create DNS record
 	bold.Println("→ Setting up DNS...")
 	dnsClient := dns.NewClient(config.Get("hetzner_dns_token"))
 
@@ -180,26 +187,17 @@ func runNew(cmd *cobra.Command, args []string) error {
 	}
 	green.Printf("  ✓ DNS A record: %s → %s\n", previewHost, serverIP)
 
-	// Wait for DNS propagation before requesting certificate
+	// Step 10: Wait for DNS propagation, then configure domain + certificate
 	fmt.Printf("  Waiting for DNS propagation...")
 	if err := waitForDNS(previewHost, serverIP, 3*time.Minute); err != nil {
-		color.Yellow("\n  ⚠ DNS not yet propagated: %v (certificate may be delayed)", err)
-	} else {
-		green.Println(" ✓")
+		return fmt.Errorf("DNS propagation failed: %w — try again later with: monolinie domain %s", err, name)
 	}
+	green.Println(" ✓")
 
-	// Step 9: Create domain in Dokploy with Let's Encrypt
 	if _, err := dk.CreateDomain(app.ApplicationID, previewHost, 3000, true, "letsencrypt"); err != nil {
 		return fmt.Errorf("create domain: %w", err)
 	}
-	green.Println("  ✓ Domain configured with Let's Encrypt")
-
-	// Step 10: Deploy
-	bold.Println("→ Deploying application...")
-	if err := dk.DeployApplication(app.ApplicationID); err != nil {
-		return fmt.Errorf("deploy: %w", err)
-	}
-	green.Println("  ✓ Deployment started")
+	green.Println("  ✓ Domain configured with HTTPS")
 
 	// Summary
 	fmt.Println()

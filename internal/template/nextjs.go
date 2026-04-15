@@ -69,7 +69,7 @@ func writePageTSX(dir string) error {
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
           </span>
-          <span className="font-mono text-xs text-emerald-600 dark:text-emerald-400">
+          <span className="font-mono text-xs text-foreground">
             Live
           </span>
         </div>
@@ -86,7 +86,10 @@ func writePageTSX(dir string) error {
         </p>
 
         <p className="font-mono text-xs text-muted-foreground/50 pt-4">
-          Developed by Monolinie
+          Developed by{" "}
+          <a href="https://monolinie.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground transition-colors">
+            Monolinie
+          </a>
         </p>
       </main>
     </div>
