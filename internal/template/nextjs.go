@@ -63,15 +63,17 @@ func writePageTSX(dir string) error {
 	content := `export default function Home() {
   return (
     <div className="flex flex-col flex-1 items-center justify-center px-6">
-      <main className="flex w-full max-w-xl flex-col items-center gap-8 text-center">
-        <div className="flex items-center gap-2.5">
-          <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-          </span>
-          <span className="font-mono text-xs text-foreground">
-            Live
-          </span>
+      <main className="flex w-full max-w-xl flex-col items-center gap-4 text-center">
+        <div className="flex flex-col gap-1 items-center">
+          <div className="flex items-center gap-2.5">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+            </span>
+            <span className="font-mono text-xs text-foreground">
+              Live
+            </span>
+          </div>
         </div>
 
         <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
@@ -85,7 +87,7 @@ func writePageTSX(dir string) error {
           own domain.
         </p>
 
-        <p className="font-mono text-xs text-muted-foreground/50 pt-4">
+        <p className="text-sm text-foreground pt-4">
           Developed by{" "}
           <a href="https://monolinie.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground transition-colors">
             Monolinie
