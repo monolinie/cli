@@ -1,11 +1,14 @@
 package cmd
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/fatih/color"
 	"github.com/monolinie/cli/internal/config"
@@ -177,6 +180,14 @@ func runNew(cmd *cobra.Command, args []string) error {
 	}
 	green.Printf("  ✓ DNS A record: %s → %s\n", previewHost, serverIP)
 
+	// Wait for DNS propagation before requesting certificate
+	fmt.Printf("  Waiting for DNS propagation...")
+	if err := waitForDNS(previewHost, serverIP, 3*time.Minute); err != nil {
+		color.Yellow("\n  ⚠ DNS not yet propagated: %v (certificate may be delayed)", err)
+	} else {
+		green.Println(" ✓")
+	}
+
 	// Step 9: Create domain in Dokploy with Let's Encrypt
 	if _, err := dk.CreateDomain(app.ApplicationID, previewHost, 3000, true, "letsencrypt"); err != nil {
 		return fmt.Errorf("create domain: %w", err)
@@ -214,6 +225,32 @@ func generatePassword(length int) string {
 	b := make([]byte, length)
 	rand.Read(b)
 	return hex.EncodeToString(b)[:length]
+}
+
+func waitForDNS(host, expectedIP string, timeout time.Duration) error {
+	// Use Google's public DNS to avoid local NXDOMAIN caching
+	resolver := &net.Resolver{
+		PreferGo: true,
+		Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+			d := net.Dialer{Timeout: 5 * time.Second}
+			return d.DialContext(ctx, "udp", "8.8.8.8:53")
+		},
+	}
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		ips, err := resolver.LookupHost(ctx, host)
+		cancel()
+		if err == nil {
+			for _, ip := range ips {
+				if ip == expectedIP {
+					return nil
+				}
+			}
+		}
+		time.Sleep(3 * time.Second)
+	}
+	return fmt.Errorf("timed out waiting for %s to resolve to %s", host, expectedIP)
 }
 
 func sanitizeDBName(name string) string {
