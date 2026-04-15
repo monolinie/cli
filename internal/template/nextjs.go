@@ -44,9 +44,15 @@ func applyTemplate(dir string) error {
 	for _, f := range []string{"next.svg", "vercel.svg", "file.svg", "globe.svg", "window.svg"} {
 		os.Remove(filepath.Join(dir, "public", f))
 	}
+	// Remove default Vercel favicon from app directory
+	os.Remove(filepath.Join(dir, "src", "app", "favicon.ico"))
 
 	// Ensure public/ has at least one file so Docker COPY doesn't fail
 	if err := writeRobotsTxt(dir); err != nil {
+		return err
+	}
+
+	if err := writeFonts(dir); err != nil {
 		return err
 	}
 
@@ -69,12 +75,12 @@ func writePageTSX(dir string) error {
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
           </span>
-          <span className="font-mono text-xs text-foreground">
+          <span className="font-sans text-xs text-foreground">
             Live
           </span>
         </div>
   
-        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+        <h1 className="font-serif text-3xl font-semibold tracking-tight sm:text-4xl">
           Preview is live.
         </h1>
 
@@ -101,22 +107,31 @@ func writePageTSX(dir string) error {
 
 func writeLayoutTSX(dir string) error {
 	content := `import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+const sans = localFont({
+  src: [
+    { path: "./fonts/GoogleSansFlex-Regular.woff2", weight: "400" },
+    { path: "./fonts/GoogleSansFlex-Medium.woff2", weight: "500" },
+  ],
+  variable: "--font-studio-sans",
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const serif = localFont({
+  src: [
+    { path: "./fonts/LibreBaskerville-Regular.woff2", weight: "400" },
+    { path: "./fonts/LibreBaskerville-Medium.woff2", weight: "500" },
+  ],
+  variable: "--font-studio-serif",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
   title: "Monolinie Project",
   description: "Built and deployed with Monolinie",
+  robots: { index: false, follow: false },
 };
 
 export default function RootLayout({
@@ -127,7 +142,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={` + "`" + `${geistSans.variable} ${geistMono.variable} min-h-screen flex flex-col antialiased` + "`" + `}
+        className={` + "`" + `${sans.variable} ${serif.variable} min-h-screen flex flex-col antialiased` + "`" + `}
       >
         {children}
       </body>
@@ -165,8 +180,8 @@ func writeGlobalCSS(dir string) error {
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-studio-sans);
+  --font-serif: var(--font-studio-serif);
 }
 
 body {
@@ -180,7 +195,7 @@ body {
 
 func writeRobotsTxt(dir string) error {
 	content := `User-agent: *
-Allow: /
+Disallow: /
 `
 	return os.WriteFile(filepath.Join(dir, "public", "robots.txt"), []byte(content), 0644)
 }
