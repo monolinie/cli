@@ -75,12 +75,12 @@ func writePageTSX(dir string) error {
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
           </span>
-          <span className="font-sans text-xs text-foreground">
+          <span className="font-mono text-sm tracking-[0.2em] text-muted-foreground uppercase">
             Live
           </span>
         </div>
   
-        <h1 className="font-serif text-3xl font-semibold tracking-tight sm:text-4xl">
+        <h1 className="font-serif text-3xl md:text-4xl font-normal">
           Preview is live.
         </h1>
 
@@ -128,6 +128,15 @@ const serif = localFont({
   display: "swap",
 });
 
+const mono = localFont({
+  src: [
+    { path: "./fonts/GeistMono-Regular.woff2", weight: "400" },
+    { path: "./fonts/GeistMono-Medium.woff2", weight: "500" },
+  ],
+  variable: "--font-geist-mono",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "Monolinie Project",
   description: "Built and deployed with Monolinie",
@@ -142,7 +151,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={` + "`" + `${sans.variable} ${serif.variable} min-h-screen flex flex-col antialiased` + "`" + `}
+        className={` + "`" + `${sans.variable} ${serif.variable} ${mono.variable} min-h-screen flex flex-col antialiased` + "`" + `}
       >
         {children}
       </body>
@@ -182,6 +191,7 @@ func writeGlobalCSS(dir string) error {
   --color-border: var(--border);
   --font-sans: var(--font-studio-sans);
   --font-serif: var(--font-studio-serif);
+  --font-mono: var(--font-geist-mono);
 }
 
 body {
