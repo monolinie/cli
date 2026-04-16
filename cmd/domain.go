@@ -134,9 +134,14 @@ func runDomainAdd(cmd *cobra.Command, args []string) error {
 		}
 		recordName := host[:len(host)-len(baseDomain)-1] // strip ".domain.com"
 		if err := dnsClient.CreateRecord(zone.ID, "A", recordName, serverIP, 300); err != nil {
-			return fmt.Errorf("create DNS record: %w", err)
+			if strings.Contains(err.Error(), "already exist") {
+				green.Printf("  ✓ DNS A record already exists: %s\n", host)
+			} else {
+				return fmt.Errorf("create DNS record: %w", err)
+			}
+		} else {
+			green.Printf("  ✓ DNS A record: %s → %s\n", host, serverIP)
 		}
-		green.Printf("  ✓ DNS A record: %s → %s\n", host, serverIP)
 
 		// Wait for DNS
 		fmt.Printf("  Waiting for DNS propagation...")
