@@ -22,14 +22,18 @@ var (
 )
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete <project-name>",
-	Short: "Delete a project (reverse provision)",
-	Long: `Tear down a project: remove Dokploy services, DNS record, and GitHub repo.
+	Use:   "delete <project-name> [project-name...]",
+	Short: "Delete one or more projects (reverse provision)",
+	Long: `Tear down projects: remove Dokploy services, DNS records, and GitHub repos.
+
+Delete multiple projects at once:
+  monolinie delete ww11 ww1135       # deletes both projects
+  monolinie delete ww11 ww1135 -f    # skip confirmation
 
 Use --all to delete all projects matching a prefix:
   monolinie delete test --all        # deletes all projects starting with "test"
   monolinie delete test --all -f     # skip confirmation`,
-	Args: cobra.ExactArgs(1),
+	Args: cobra.MinimumNArgs(1),
 	RunE: runDelete,
 }
 
@@ -41,8 +45,6 @@ func init() {
 }
 
 func runDelete(cmd *cobra.Command, args []string) error {
-	name := args[0]
-
 	if err := config.Init(); err != nil {
 		return err
 	}
@@ -53,9 +55,12 @@ func runDelete(cmd *cobra.Command, args []string) error {
 	dk := dokploy.NewClient(config.Get("dokploy_url"), config.Get("dokploy_api_key"))
 
 	if flagAll {
-		return deleteByPrefix(dk, name)
+		return deleteByPrefix(dk, args[0])
 	}
-	return deleteSingle(dk, name)
+	if len(args) == 1 {
+		return deleteSingle(dk, args[0])
+	}
+	return deleteMultiple(dk, args)
 }
 
 func deleteByPrefix(dk *dokploy.Client, prefix string) error {
@@ -113,6 +118,54 @@ func deleteByPrefix(dk *dokploy.Client, prefix string) error {
 		color.Yellow("Completed with errors. Failed projects: %s", strings.Join(failed, ", "))
 	} else {
 		color.New(color.FgGreen).Printf("All %d projects deleted successfully.\n\n", len(matched))
+	}
+	return nil
+}
+
+func deleteMultiple(dk *dokploy.Client, names []string) error {
+	bold := color.New(color.Bold)
+
+	bold.Printf("\nProjects to delete:\n")
+	for _, n := range names {
+		fmt.Printf("  - %s\n", n)
+	}
+	fmt.Println()
+
+	if !flagForce {
+		color.Red("  WARNING: This will permanently delete ALL %d projects above including:", len(names))
+		fmt.Println("    - Dokploy projects and all services")
+		fmt.Println("    - DNS records")
+		fmt.Println("    - GitHub repositories")
+		fmt.Println()
+		fmt.Printf("  Type \"yes\" to confirm deletion: ")
+		scanner := bufio.NewScanner(os.Stdin)
+		scanner.Scan()
+		if strings.TrimSpace(scanner.Text()) != "yes" {
+			fmt.Println("  Aborted.")
+			return nil
+		}
+	}
+
+	var failed []string
+	for _, name := range names {
+		project, err := findProjectByName(dk, name)
+		if err != nil {
+			color.Red("  ✗ %s: %v", name, err)
+			failed = append(failed, name)
+			continue
+		}
+		bold.Printf("\n→ Deleting %s...\n", name)
+		if err := deleteProject(name, project.ProjectID, dk); err != nil {
+			color.Red("  ✗ Failed to fully delete %s: %v", name, err)
+			failed = append(failed, name)
+		}
+	}
+
+	fmt.Println()
+	if len(failed) > 0 {
+		color.Yellow("Completed with errors. Failed projects: %s", strings.Join(failed, ", "))
+	} else {
+		color.New(color.FgGreen).Printf("All %d projects deleted successfully.\n\n", len(names))
 	}
 	return nil
 }

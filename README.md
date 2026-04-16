@@ -84,7 +84,7 @@ monolinie config get github-org
 | `monolinie domain remove <name> <domain>` | Remove domain and DNS record                      |
 | `monolinie open <name>`                   | Open project URL in browser                       |
 | `monolinie sync <local\|prod>`            | Sync Dokploy projects with the home app database  |
-| `monolinie delete <name>`                 | Delete project and all resources                  |
+| `monolinie delete <name> [name...]`       | Delete one or more projects and all resources     |
 
 ### Home app environments
 
@@ -116,7 +116,7 @@ monolinie config set home_api_key your-api-key
 
 - `new`: `--public` (public repo), `--no-db` (skip database), `--env <local|prod>` (home app environment, default: prod)
 - `logs`: `-n, --lines <N>` (last N lines)
-- `delete`: `-f, --force` (skip confirmation), `--all` (bulk delete by prefix), `--env <local|prod>` (home app environment, default: prod)
+- `delete`: `-f, --force` (skip confirmation), `--all` (bulk delete by prefix), `--env <local|prod>` (home app environment, default: prod). Accepts multiple names: `ml delete ww11 ww1135`
 
 ## Requirements
 
