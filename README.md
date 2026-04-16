@@ -23,7 +23,7 @@ One command to go from zero to a fully deployed Next.js app with a GitHub repo, 
 ## Install
 
 ```bash
-go install github.com/monolinie/cli@latest
+go install github.com/monolinie/cli/cmd/monolinie@latest
 ```
 
 Or build from source:
@@ -31,9 +31,7 @@ Or build from source:
 ```bash
 git clone https://github.com/monolinie/cli.git
 cd cli
-go build -o monolinie .
-# Or build with the short name:
-go build -o ml .
+go install ./cmd/monolinie
 ```
 
 ## Configuration
@@ -65,119 +63,29 @@ Get a single config value:
 monolinie config get github-org
 ```
 
-## Usage
+## Commands
 
-### Create a new project
+| Command                                   | Description                                       |
+| ----------------------------------------- | ------------------------------------------------- |
+| `monolinie new <name>`                    | Create a new project (repo, app, DB, DNS, deploy) |
+| `monolinie list`                          | List all projects with app/DB counts and URLs     |
+| `monolinie status <name>`                 | Check DNS resolution and HTTPS availability       |
+| `monolinie logs <name>`                   | Show latest deployment log                        |
+| `monolinie redeploy <name>`               | Trigger a fresh deployment                        |
+| `monolinie env list <name>`               | List environment variables                        |
+| `monolinie env get <name> <KEY>`          | Get a single env var                              |
+| `monolinie env set <name> K=V ...`        | Set one or more env vars                          |
+| `monolinie domain list <name>`            | List domains for a project                        |
+| `monolinie domain add <name> <domain>`    | Add domain (DNS + HTTPS)                          |
+| `monolinie domain remove <name> <domain>` | Remove domain and DNS record                      |
+| `monolinie open <name>`                   | Open project URL in browser                       |
+| `monolinie delete <name>`                 | Delete project and all resources                  |
 
-```bash
-monolinie new my-app
-```
+### Flags
 
-Options:
-- `--public` — create a public GitHub repo (default: private)
-- `--no-db` — skip PostgreSQL database creation
-
-### List all projects
-
-```bash
-monolinie list
-```
-
-Shows all projects deployed in Dokploy with app count, database count, and URLs.
-
-### Check project status
-
-```bash
-monolinie status my-app
-```
-
-Checks DNS resolution and HTTPS availability for the project.
-
-### View deployment logs
-
-```bash
-monolinie logs my-app
-```
-
-Shows the latest deployment log. Options:
-- `-n, --lines <N>` — show only the last N lines
-
-### Redeploy a project
-
-```bash
-monolinie redeploy my-app
-```
-
-Triggers a fresh deployment without changing anything else.
-
-### Manage environment variables
-
-```bash
-# List all env vars
-monolinie env list my-app
-
-# Get a single env var
-monolinie env get my-app DATABASE_URL
-
-# Set env vars (one or more KEY=VALUE pairs)
-monolinie env set my-app NODE_ENV=production DEBUG=true
-```
-
-Sensitive values (keys, tokens, passwords) are masked in the output.
-
-After setting variables, run `monolinie redeploy my-app` to apply changes.
-
-### Manage domains
-
-```bash
-# List domains for a project
-monolinie domain list my-app
-
-# Add a domain (creates DNS record + configures HTTPS)
-monolinie domain add my-app custom.your-domain.com
-
-# Remove a domain (removes from Dokploy + deletes DNS record)
-monolinie domain remove my-app custom.your-domain.com
-```
-
-When adding a domain under your configured base domain, the CLI automatically creates the DNS A record and waits for propagation before configuring HTTPS with Let's Encrypt.
-
-### Open project in browser
-
-```bash
-monolinie open my-app
-```
-
-Opens the project URL in your default browser.
-
-### Delete a project
-
-```bash
-monolinie delete my-app
-```
-
-Tears down everything:
-- Removes the Dokploy project and all services
-- Deletes the DNS record
-- Deletes the GitHub repository
-
-Options:
-- `-f, --force` — skip confirmation prompt
-- `--all` — delete every project whose name starts with the given prefix
-
-You will be asked to type the project name to confirm unless `--force` is used.
-
-Bulk delete by prefix:
-
-```bash
-# Delete every project whose name starts with "test"
-monolinie delete test --all
-
-# Same, but skip the confirmation prompt
-monolinie delete test --all -f
-```
-
-When using `--all`, you must type the prefix to confirm the deletion.
+- `new`: `--public` (public repo), `--no-db` (skip database)
+- `logs`: `-n, --lines <N>` (last N lines)
+- `delete`: `-f, --force` (skip confirmation), `--all` (bulk delete by prefix)
 
 ## Requirements
 
