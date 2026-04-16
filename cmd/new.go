@@ -15,6 +15,7 @@ import (
 	"github.com/monolinie/cli/internal/dns"
 	"github.com/monolinie/cli/internal/dokploy"
 	"github.com/monolinie/cli/internal/github"
+	"github.com/monolinie/cli/internal/home"
 	"github.com/monolinie/cli/internal/template"
 	"github.com/spf13/cobra"
 )
@@ -135,6 +136,7 @@ func runNew(cmd *cobra.Command, args []string) error {
 
 	// Step 6: Create PostgreSQL database (unless --no-db)
 	var dbConnStr string
+	var postgresID string
 	if !flagNoDB {
 		bold.Println("→ Creating PostgreSQL database...")
 		dbPass := generatePassword(16)
@@ -150,6 +152,7 @@ func runNew(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("deploy postgres: %w", err)
 		}
 
+		postgresID = pg.PostgresID
 		dbConnStr = fmt.Sprintf("postgresql://%s:%s@%s-db:5432/%s", dbUser, dbPass, name, dbName)
 		green.Printf("  ✓ PostgreSQL created (ID: %s)\n", pg.PostgresID)
 	}
@@ -212,6 +215,26 @@ func runNew(cmd *cobra.Command, args []string) error {
 	fmt.Printf("  Dokploy: %s\n", config.Get("dokploy_url"))
 	bold.Println("═══════════════════════════════════════════")
 	fmt.Println()
+
+	// Register with home app (non-fatal)
+	homeURL := config.Get("home_url")
+	homeKey := config.Get("home_api_key")
+	if homeURL != "" && homeKey != "" {
+		hc := home.NewClient(homeURL, homeKey)
+		_, err := hc.RegisterProject(home.RegisterInput{
+			Name:              name,
+			Subdomain:         name,
+			GithubRepo:        fmt.Sprintf("%s/%s", org, name),
+			DokployProjectID:  result.Project.ProjectID,
+			DokployAppID:      app.ApplicationID,
+			DokployPostgresID: postgresID,
+		})
+		if err != nil {
+			color.New(color.FgYellow).Printf("  ⚠ Failed to register with home app: %v\n", err)
+		} else {
+			green.Println("  ✓ Registered in home app")
+		}
+	}
 
 	// Cleanup temp dir
 	os.RemoveAll(tmpDir)

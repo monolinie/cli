@@ -11,6 +11,7 @@ import (
 	"github.com/monolinie/cli/internal/dns"
 	"github.com/monolinie/cli/internal/dokploy"
 	"github.com/monolinie/cli/internal/github"
+	"github.com/monolinie/cli/internal/home"
 	"github.com/spf13/cobra"
 )
 
@@ -184,6 +185,22 @@ func deleteProject(name, projectID string, dk *dokploy.Client) error {
 		yellow.Printf(" ⚠ %v (skipping)\n", err)
 	} else {
 		green.Println(" ✓")
+	}
+
+	// Deregister from home app (non-fatal)
+	homeURL := config.Get("home_url")
+	homeKey := config.Get("home_api_key")
+	if homeURL != "" && homeKey != "" {
+		hc := home.NewClient(homeURL, homeKey)
+		_, err := hc.DeregisterProject(home.DeregisterInput{
+			DokployProjectID: projectID,
+			Name:             name,
+		})
+		if err != nil {
+			yellow.Printf("  ⚠ Failed to deregister from home app: %v\n", err)
+		} else {
+			green.Println("  ✓ Deregistered from home app")
+		}
 	}
 
 	return nil

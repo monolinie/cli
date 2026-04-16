@@ -15,6 +15,8 @@ var configKeys = []string{
 	"github_org",
 	"domain",
 	"dokploy_server_ip",
+	"home_url",
+	"home_api_key",
 }
 
 func Init() error {
