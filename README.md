@@ -24,6 +24,8 @@ One command to go from zero to a fully deployed Next.js app with a GitHub repo, 
 
 ```bash
 go install github.com/monolinie/cli/cmd/monolinie@latest
+# or
+go install github.com/monolinie/cli/cmd/ml@latest
 ```
 
 Or build from source:
@@ -32,6 +34,8 @@ Or build from source:
 git clone https://github.com/monolinie/cli.git
 cd cli
 go install ./cmd/monolinie
+# or
+go install ./cmd/ml
 ```
 
 ## Configuration
