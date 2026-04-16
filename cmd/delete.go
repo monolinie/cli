@@ -25,8 +25,8 @@ var deleteCmd = &cobra.Command{
 	Long: `Tear down a project: remove Dokploy services, DNS record, and GitHub repo.
 
 Use --all to delete all projects matching a prefix:
-  ml delete test --all        # deletes all projects starting with "test"
-  ml delete test --all -f     # skip confirmation`,
+  monolinie delete test --all        # deletes all projects starting with "test"
+  monolinie delete test --all -f     # skip confirmation`,
 	Args: cobra.ExactArgs(1),
 	RunE: runDelete,
 }

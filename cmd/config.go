@@ -12,7 +12,7 @@ import (
 var configCmd = &cobra.Command{
 	Use:   "config",
 	Short: "Manage configuration",
-	Long:  "Set, get, and list configuration values stored in ~/.ml/config.yaml",
+	Long:  "Set, get, and list configuration values stored in ~/.monolinie/config.yaml",
 }
 
 var configSetCmd = &cobra.Command{

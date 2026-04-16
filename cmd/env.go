@@ -162,7 +162,7 @@ func runEnvSet(cmd *cobra.Command, args []string) error {
 
 	green := color.New(color.FgGreen)
 	green.Printf("✓ Updated environment variables for %s\n", name)
-	color.Yellow("  Run `ml redeploy %s` to apply changes.\n", name)
+	color.Yellow("  Run `monolinie redeploy %s` to apply changes.\n", name)
 
 	return nil
 }

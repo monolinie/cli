@@ -23,7 +23,7 @@ func Init() error {
 		return fmt.Errorf("get home dir: %w", err)
 	}
 
-	configDir := filepath.Join(home, ".ml")
+	configDir := filepath.Join(home, ".monolinie")
 	if err := os.MkdirAll(configDir, 0755); err != nil {
 		return fmt.Errorf("create config dir: %w", err)
 	}
