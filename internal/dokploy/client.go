@@ -272,18 +272,6 @@ func (c *Client) GetDeployments(appID string) ([]Deployment, error) {
 	return result, nil
 }
 
-// GetDeploymentLog returns the log content for a deployment.
-func (c *Client) GetDeploymentLog(logPath string) (string, error) {
-	var result struct {
-		Data string `json:"data"`
-	}
-	body := map[string]string{"logPath": logPath}
-	if err := c.post("/api/deployment.readLog", body, &result); err != nil {
-		return "", fmt.Errorf("read log: %w", err)
-	}
-	return result.Data, nil
-}
-
 // UpdateEnvironment updates the environment variables for an application.
 func (c *Client) UpdateEnvironment(appID, env string) error {
 	body := map[string]any{

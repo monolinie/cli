@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"os/exec"
+	"regexp"
 
 	"github.com/fatih/color"
 	"github.com/monolinie/cli/internal/config"
@@ -72,37 +74,27 @@ func runLogs(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	logContent, err := dk.GetDeploymentLog(latest.LogPath)
-	if err != nil {
-		return fmt.Errorf("read log: %w", err)
+	serverIP := config.Get("dokploy_server_ip")
+	if serverIP == "" {
+		return fmt.Errorf("dokploy_server_ip not configured — run: ml config set dokploy_server_ip <ip>")
 	}
 
-	if flagLogLines > 0 {
-		lines := splitLines(logContent)
-		if len(lines) > flagLogLines {
-			lines = lines[len(lines)-flagLogLines:]
-		}
-		for _, line := range lines {
-			fmt.Println(line)
-		}
-	} else {
-		fmt.Print(logContent)
+	safeLogPath := regexp.MustCompile(`^[a-zA-Z0-9/_.\-:]+$`)
+	if !safeLogPath.MatchString(latest.LogPath) {
+		return fmt.Errorf("refusing to read log: path contains unexpected characters: %s", latest.LogPath)
 	}
+
+	readCmd := fmt.Sprintf("cat %s", latest.LogPath)
+	if flagLogLines > 0 {
+		readCmd = fmt.Sprintf("tail -n %d %s", flagLogLines, latest.LogPath)
+	}
+
+	out, err := exec.Command("ssh", "-o", "StrictHostKeyChecking=accept-new", "root@"+serverIP, readCmd).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("read log via SSH: %s", string(out))
+	}
+
+	fmt.Print(string(out))
 
 	return nil
-}
-
-func splitLines(s string) []string {
-	var lines []string
-	start := 0
-	for i := 0; i < len(s); i++ {
-		if s[i] == '\n' {
-			lines = append(lines, s[start:i])
-			start = i + 1
-		}
-	}
-	if start < len(s) {
-		lines = append(lines, s[start:])
-	}
-	return lines
 }
