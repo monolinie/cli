@@ -57,6 +57,14 @@ View current config:
 monolinie config list
 ```
 
+Sensitive values (keys and tokens) are masked in the output.
+
+Get a single config value:
+
+```bash
+monolinie config get github-org
+```
+
 ## Usage
 
 ### Create a new project
@@ -155,8 +163,21 @@ Tears down everything:
 
 Options:
 - `-f, --force` — skip confirmation prompt
+- `--all` — delete every project whose name starts with the given prefix
 
 You will be asked to type the project name to confirm unless `--force` is used.
+
+Bulk delete by prefix:
+
+```bash
+# Delete every project whose name starts with "test"
+monolinie delete test --all
+
+# Same, but skip the confirmation prompt
+monolinie delete test --all -f
+```
+
+When using `--all`, you must type the prefix to confirm the deletion.
 
 ## Requirements
 
