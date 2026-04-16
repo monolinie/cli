@@ -14,18 +14,26 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var flagForce bool
+var (
+	flagForce bool
+	flagAll   bool
+)
 
 var deleteCmd = &cobra.Command{
 	Use:   "delete <project-name>",
-	Short: "Delete a project",
-	Long:  "Tear down a project: remove Dokploy services, DNS record, and GitHub repo.",
-	Args:  cobra.ExactArgs(1),
-	RunE:  runDelete,
+	Short: "Delete a project (reverse provision)",
+	Long: `Tear down a project: remove Dokploy services, DNS record, and GitHub repo.
+
+Use --all to delete all projects matching a prefix:
+  monolinie delete test --all        # deletes all projects starting with "test"
+  monolinie delete test --all -f     # skip confirmation`,
+	Args: cobra.ExactArgs(1),
+	RunE: runDelete,
 }
 
 func init() {
 	deleteCmd.Flags().BoolVarP(&flagForce, "force", "f", false, "Skip confirmation prompt")
+	deleteCmd.Flags().BoolVar(&flagAll, "all", false, "Delete all projects matching the prefix")
 	rootCmd.AddCommand(deleteCmd)
 }
 
@@ -39,7 +47,81 @@ func runDelete(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Confirmation
+	dk := dokploy.NewClient(config.Get("dokploy_url"), config.Get("dokploy_api_key"))
+
+	if flagAll {
+		return deleteByPrefix(dk, name)
+	}
+	return deleteSingle(dk, name)
+}
+
+func deleteByPrefix(dk *dokploy.Client, prefix string) error {
+	bold := color.New(color.Bold)
+
+	projects, err := dk.GetProjects()
+	if err != nil {
+		return fmt.Errorf("list projects: %w", err)
+	}
+
+	var matched []dokploy.ProjectDetail
+	for i := range projects {
+		if strings.HasPrefix(projects[i].Name, prefix) {
+			matched = append(matched, projects[i])
+		}
+	}
+
+	if len(matched) == 0 {
+		fmt.Printf("No projects found with prefix %q\n", prefix)
+		return nil
+	}
+
+	bold.Printf("\nFound %d project(s) matching prefix %q:\n", len(matched), prefix)
+	for _, p := range matched {
+		fmt.Printf("  - %s\n", p.Name)
+	}
+	fmt.Println()
+
+	if !flagForce {
+		color.Red("  WARNING: This will permanently delete ALL %d projects above including:", len(matched))
+		fmt.Println("    - Dokploy projects and all services")
+		fmt.Println("    - DNS records")
+		fmt.Println("    - GitHub repositories")
+		fmt.Println()
+		fmt.Printf("  Type %q to confirm deletion: ", prefix)
+		scanner := bufio.NewScanner(os.Stdin)
+		scanner.Scan()
+		if strings.TrimSpace(scanner.Text()) != prefix {
+			fmt.Println("  Aborted.")
+			return nil
+		}
+	}
+
+	var failed []string
+	for _, p := range matched {
+		bold.Printf("\n→ Deleting %s...\n", p.Name)
+		if err := deleteProject(p.Name, p.ProjectID, dk); err != nil {
+			color.Red("  ✗ Failed to fully delete %s: %v", p.Name, err)
+			failed = append(failed, p.Name)
+		}
+	}
+
+	fmt.Println()
+	if len(failed) > 0 {
+		color.Yellow("Completed with errors. Failed projects: %s", strings.Join(failed, ", "))
+	} else {
+		color.New(color.FgGreen).Printf("All %d projects deleted successfully.\n\n", len(matched))
+	}
+	return nil
+}
+
+func deleteSingle(dk *dokploy.Client, name string) error {
+	bold := color.New(color.Bold)
+
+	project, err := findProjectByName(dk, name)
+	if err != nil {
+		return err
+	}
+
 	if !flagForce {
 		color.Red("\n  WARNING: This will permanently delete project %q including:", name)
 		fmt.Println("    - Dokploy project and all services")
@@ -55,52 +137,50 @@ func runDelete(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	bold.Printf("\n→ Deleting %s...\n", name)
+	deleteProject(name, project.ProjectID, dk)
+
+	fmt.Println()
+	color.New(color.FgGreen).Printf("  Project %q has been deleted.\n\n", name)
+	return nil
+}
+
+func deleteProject(name, projectID string, dk *dokploy.Client) error {
 	org := config.Get("github_org")
 	domain := config.Get("domain")
-	bold := color.New(color.Bold)
 	green := color.New(color.FgGreen)
 	yellow := color.New(color.FgYellow)
 
-	dk := dokploy.NewClient(config.Get("dokploy_url"), config.Get("dokploy_api_key"))
-
 	// Step 1: Remove Dokploy project
-	bold.Println("\n→ Removing Dokploy project...")
-	project, err := findProjectByName(dk, name)
-	if err != nil {
-		yellow.Printf("  ⚠ %s (skipping)\n", err)
+	fmt.Printf("  Removing Dokploy project...")
+	if err := dk.RemoveProject(projectID); err != nil {
+		yellow.Printf(" ⚠ %v (skipping)\n", err)
 	} else {
-		if err := dk.RemoveProject(project.ProjectID); err != nil {
-			yellow.Printf("  ⚠ remove project: %s (skipping)\n", err)
-		} else {
-			green.Println("  ✓ Dokploy project removed")
-		}
+		green.Println(" ✓")
 	}
 
 	// Step 2: Remove DNS record
-	bold.Println("→ Removing DNS record...")
+	fmt.Printf("  Removing DNS record...")
 	dnsClient := dns.NewClient(config.Get("hetzner_dns_token"))
 	zone, err := dnsClient.GetZoneByName(domain)
 	if err != nil {
-		yellow.Printf("  ⚠ get zone: %s (skipping)\n", err)
+		yellow.Printf(" ⚠ %v (skipping)\n", err)
 	} else {
 		recordName := name + ".preview"
 		if err := dnsClient.DeleteRecord(zone.ID, "A", recordName); err != nil {
-			yellow.Printf("  ⚠ delete record: %s (skipping)\n", err)
+			yellow.Printf(" ⚠ %v (skipping)\n", err)
 		} else {
-			green.Println("  ✓ DNS record removed")
+			green.Println(" ✓")
 		}
 	}
 
 	// Step 3: Delete GitHub repo
-	bold.Println("→ Deleting GitHub repository...")
+	fmt.Printf("  Deleting GitHub repo...")
 	if err := github.DeleteRepo(org, name); err != nil {
-		yellow.Printf("  ⚠ %s (skipping)\n", err)
+		yellow.Printf(" ⚠ %v (skipping)\n", err)
 	} else {
-		green.Println("  ✓ GitHub repository deleted")
+		green.Println(" ✓")
 	}
-
-	fmt.Println()
-	green.Printf("  Project %q has been deleted.\n\n", name)
 
 	return nil
 }
