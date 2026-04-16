@@ -10,10 +10,10 @@ import (
 )
 
 var redeployCmd = &cobra.Command{
-	Use:   "redeploy <project-name>",
+	Use:   "redeploy <project-name> [app-name]",
 	Short: "Redeploy a project",
-	Long:  "Trigger a fresh deployment for a project.",
-	Args:  cobra.ExactArgs(1),
+	Long:  "Trigger a fresh deployment for a project. Optionally specify which app.",
+	Args:  cobra.RangeArgs(1, 2),
 	RunE:  runRedeploy,
 }
 
@@ -38,7 +38,11 @@ func runRedeploy(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	app, err := findAppInProject(project)
+	appName := ""
+	if len(args) > 1 {
+		appName = args[1]
+	}
+	app, err := findAppInProject(project, appName)
 	if err != nil {
 		return err
 	}

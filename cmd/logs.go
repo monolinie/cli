@@ -12,10 +12,10 @@ import (
 var flagLogLines int
 
 var logsCmd = &cobra.Command{
-	Use:   "logs <project-name>",
+	Use:   "logs <project-name> [app-name]",
 	Short: "View deployment logs",
-	Long:  "Show the latest deployment log for a project.",
-	Args:  cobra.ExactArgs(1),
+	Long:  "Show the latest deployment log for a project. Optionally specify which app.",
+	Args:  cobra.RangeArgs(1, 2),
 	RunE:  runLogs,
 }
 
@@ -41,7 +41,11 @@ func runLogs(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	app, err := findAppInProject(project)
+	appName := ""
+	if len(args) > 1 {
+		appName = args[1]
+	}
+	app, err := findAppInProject(project, appName)
 	if err != nil {
 		return err
 	}

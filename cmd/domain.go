@@ -40,7 +40,10 @@ var domainRemoveCmd = &cobra.Command{
 	RunE:  runDomainRemove,
 }
 
+var flagDomainApp string
+
 func init() {
+	domainCmd.PersistentFlags().StringVar(&flagDomainApp, "app", "", "Target a specific app by name")
 	domainCmd.AddCommand(domainListCmd, domainAddCmd, domainRemoveCmd)
 	rootCmd.AddCommand(domainCmd)
 }
@@ -60,7 +63,7 @@ func runDomainList(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	app, err := findAppInProject(project)
+	app, err := findAppInProject(project, flagDomainApp)
 	if err != nil {
 		return err
 	}
@@ -112,7 +115,7 @@ func runDomainAdd(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	app, err := findAppInProject(project)
+	app, err := findAppInProject(project, flagDomainApp)
 	if err != nil {
 		return err
 	}
@@ -171,7 +174,7 @@ func runDomainRemove(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	app, err := findAppInProject(project)
+	app, err := findAppInProject(project, flagDomainApp)
 	if err != nil {
 		return err
 	}

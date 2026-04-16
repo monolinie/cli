@@ -37,7 +37,10 @@ var envSetCmd = &cobra.Command{
 	RunE:  runEnvSet,
 }
 
+var flagEnvApp string
+
 func init() {
+	envCmd.PersistentFlags().StringVar(&flagEnvApp, "app", "", "Target a specific app by name")
 	envCmd.AddCommand(envListCmd, envGetCmd, envSetCmd)
 	rootCmd.AddCommand(envCmd)
 }
@@ -57,7 +60,7 @@ func getAppForProject(name string) (*dokploy.Client, *dokploy.ApplicationDetail,
 		return nil, nil, err
 	}
 
-	appRef, err := findAppInProject(project)
+	appRef, err := findAppInProject(project, flagEnvApp)
 	if err != nil {
 		return nil, nil, err
 	}

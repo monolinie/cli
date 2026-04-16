@@ -80,6 +80,7 @@ type CreateProjectResponse struct {
 
 type Application struct {
 	ApplicationID string `json:"applicationId"`
+	Name          string `json:"name"`
 	AppName       string `json:"appName"`
 }
 

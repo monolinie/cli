@@ -65,7 +65,7 @@ func deleteByPrefix(dk *dokploy.Client, prefix string) error {
 
 	var matched []dokploy.ProjectDetail
 	for i := range projects {
-		if strings.HasPrefix(projects[i].Name, prefix) {
+		if strings.HasPrefix(strings.ToLower(projects[i].Name), strings.ToLower(prefix)) {
 			matched = append(matched, projects[i])
 		}
 	}
