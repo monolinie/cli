@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"strings"
 	"time"
 
 	"github.com/fatih/color"
@@ -125,7 +126,7 @@ func runDomainAdd(cmd *cobra.Command, args []string) error {
 
 	// Create DNS record if the host is under our managed domain
 	dnsClient := dns.NewClient(config.Get("hetzner_dns_token"))
-	if len(host) > len(baseDomain) && host[len(host)-len(baseDomain):] == baseDomain {
+	if strings.HasSuffix(host, "."+baseDomain) {
 		bold.Println("\n→ Creating DNS record...")
 		zone, err := dnsClient.GetZoneByName(baseDomain)
 		if err != nil {
@@ -208,7 +209,7 @@ func runDomainRemove(cmd *cobra.Command, args []string) error {
 	green.Println("  ✓ Domain removed from Dokploy")
 
 	// Remove DNS record if under our managed domain
-	if len(host) > len(baseDomain) && host[len(host)-len(baseDomain):] == baseDomain {
+	if strings.HasSuffix(host, "."+baseDomain) {
 		bold.Println("→ Removing DNS record...")
 		dnsClient := dns.NewClient(config.Get("hetzner_dns_token"))
 		zone, err := dnsClient.GetZoneByName(baseDomain)

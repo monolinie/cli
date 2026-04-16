@@ -25,6 +25,9 @@ func init() {
 
 func runStatus(cmd *cobra.Command, args []string) error {
 	name := args[0]
+	if err := validateProjectName(name); err != nil {
+		return err
+	}
 
 	if err := config.Init(); err != nil {
 		return err

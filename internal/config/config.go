@@ -24,13 +24,13 @@ func Init() error {
 	}
 
 	configDir := filepath.Join(home, ".monolinie")
-	if err := os.MkdirAll(configDir, 0755); err != nil {
+	if err := os.MkdirAll(configDir, 0700); err != nil {
 		return fmt.Errorf("create config dir: %w", err)
 	}
 
 	configFile := filepath.Join(configDir, "config.yaml")
 	if _, err := os.Stat(configFile); os.IsNotExist(err) {
-		if err := os.WriteFile(configFile, []byte(""), 0644); err != nil {
+		if err := os.WriteFile(configFile, []byte(""), 0600); err != nil {
 			return fmt.Errorf("create config file: %w", err)
 		}
 	}

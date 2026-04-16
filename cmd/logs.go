@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os/exec"
 	"regexp"
+	"strings"
 
 	"github.com/fatih/color"
 	"github.com/monolinie/cli/internal/config"
@@ -80,8 +81,11 @@ func runLogs(cmd *cobra.Command, args []string) error {
 	}
 
 	safeLogPath := regexp.MustCompile(`^[a-zA-Z0-9/_.\-:]+$`)
-	if !safeLogPath.MatchString(latest.LogPath) {
+	if !safeLogPath.MatchString(latest.LogPath) || strings.Contains(latest.LogPath, "..") {
 		return fmt.Errorf("refusing to read log: path contains unexpected characters: %s", latest.LogPath)
+	}
+	if !strings.HasPrefix(latest.LogPath, "/etc/dokploy/logs/") {
+		return fmt.Errorf("refusing to read log: unexpected path prefix: %s", latest.LogPath)
 	}
 
 	readCmd := fmt.Sprintf("cat %s", latest.LogPath)

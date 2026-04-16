@@ -2,13 +2,30 @@ package cmd
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/monolinie/cli/internal/dokploy"
 )
 
+var validProjectName = regexp.MustCompile(`^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$`)
+
+// validateProjectName checks that a project name is safe to use in DNS, GitHub, paths, etc.
+func validateProjectName(name string) error {
+	if len(name) == 0 || len(name) > 63 {
+		return fmt.Errorf("project name must be 1-63 characters")
+	}
+	if !validProjectName.MatchString(name) {
+		return fmt.Errorf("project name %q contains invalid characters (use letters, numbers, hyphens)", name)
+	}
+	return nil
+}
+
 // findProjectByName looks up a Dokploy project by name (case-insensitive).
 func findProjectByName(dk *dokploy.Client, name string) (*dokploy.ProjectDetail, error) {
+	if err := validateProjectName(name); err != nil {
+		return nil, err
+	}
 	projects, err := dk.GetProjects()
 	if err != nil {
 		return nil, err
