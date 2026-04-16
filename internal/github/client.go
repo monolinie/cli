@@ -46,8 +46,9 @@ func AddDeployKey(org, name, title, publicKey string) error {
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		if strings.Contains(string(output), "key is already in use") {
-			if err := removeDeployKeyFromOrg(org, publicKey); err != nil {
-				return fmt.Errorf("key in use on another repo and could not remove it: %w", err)
+			removed := removeDeployKeyFromOrg(org, publicKey)
+			if !removed {
+				return fmt.Errorf("deploy key is already in use on another repo (possibly deleted) and could not be removed automatically — generate a new SSH key in Dokploy, then retry")
 			}
 			// Retry after removing from old repo
 			retryCmd := exec.Command("gh", "repo", "deploy-key", "add", "-",
@@ -71,19 +72,39 @@ type deployKey struct {
 	Key string `json:"key"`
 }
 
+// RemoveAllDeployKeys removes all deploy keys from a repo (call before deleting to prevent orphans).
+func RemoveAllDeployKeys(org, name string) {
+	keysCmd := exec.Command("gh", "api", fmt.Sprintf("/repos/%s/%s/keys", org, name))
+	keysOutput, err := keysCmd.CombinedOutput()
+	if err != nil {
+		return
+	}
+
+	var keys []deployKey
+	if err := json.Unmarshal(keysOutput, &keys); err != nil {
+		return
+	}
+
+	for _, k := range keys {
+		delCmd := exec.Command("gh", "api", "-X", "DELETE",
+			fmt.Sprintf("/repos/%s/%s/keys/%d", org, name, k.ID),
+		)
+		delCmd.CombinedOutput() // best-effort
+	}
+}
+
 // removeDeployKeyFromOrg finds and removes a deploy key across all repos in the org.
-func removeDeployKeyFromOrg(org, publicKey string) error {
-	// List all repos in the org
+// Returns true if the key was found and removed, false if orphaned (e.g. from a deleted repo).
+func removeDeployKeyFromOrg(org, publicKey string) bool {
 	cmd := exec.Command("gh", "api", "--paginate",
 		fmt.Sprintf("/orgs/%s/repos?per_page=100", org),
 		"-q", ".[].name",
 	)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("list org repos: %s\n%s", err, string(output))
+		return false
 	}
 
-	// Normalize the key for comparison (just the key type + key data, no comment)
 	targetParts := strings.Fields(strings.TrimSpace(publicKey))
 	targetKeyData := ""
 	if len(targetParts) >= 2 {
@@ -116,15 +137,15 @@ func removeDeployKeyFromOrg(org, publicKey string) error {
 				delCmd := exec.Command("gh", "api", "-X", "DELETE",
 					fmt.Sprintf("/repos/%s/%s/keys/%d", org, repo, k.ID),
 				)
-				if delOutput, err := delCmd.CombinedOutput(); err != nil {
-					return fmt.Errorf("remove key from %s/%s: %s\n%s", org, repo, err, string(delOutput))
+				if _, err := delCmd.CombinedOutput(); err != nil {
+					return false
 				}
-				return nil
+				return true
 			}
 		}
 	}
 
-	return fmt.Errorf("deploy key not found on any repo in %s", org)
+	return false
 }
 
 // DeleteRepo deletes a GitHub repository using the gh CLI.

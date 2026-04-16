@@ -6,6 +6,7 @@ import (
 	"runtime"
 
 	"github.com/monolinie/cli/internal/config"
+	"github.com/monolinie/cli/internal/dokploy"
 	"github.com/spf13/cobra"
 )
 
@@ -30,9 +31,37 @@ func runOpen(cmd *cobra.Command, args []string) error {
 	if err := config.Init(); err != nil {
 		return err
 	}
+	if err := config.Validate(); err != nil {
+		return err
+	}
 
-	domain := config.Get("domain")
-	url := fmt.Sprintf("https://%s.preview.%s", name, domain)
+	dk := dokploy.NewClient(config.Get("dokploy_url"), config.Get("dokploy_api_key"))
+
+	project, err := findProjectByName(dk, name)
+	if err != nil {
+		return err
+	}
+
+	app, err := findAppInProject(project, "")
+	if err != nil {
+		return err
+	}
+
+	domains, err := dk.GetDomainsByApplication(app.ApplicationID)
+	if err != nil {
+		return fmt.Errorf("get domains: %w", err)
+	}
+
+	if len(domains) == 0 {
+		return fmt.Errorf("no domains configured for project %q", project.Name)
+	}
+
+	d := domains[0]
+	scheme := "http"
+	if d.HTTPS {
+		scheme = "https"
+	}
+	url := fmt.Sprintf("%s://%s", scheme, d.Host)
 
 	fmt.Printf("Opening %s...\n", url)
 	return openBrowser(url)

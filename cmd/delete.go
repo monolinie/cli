@@ -174,7 +174,11 @@ func deleteProject(name, projectID string, dk *dokploy.Client) error {
 		}
 	}
 
-	// Step 3: Delete GitHub repo
+	// Step 3: Remove deploy keys and delete GitHub repo
+	fmt.Printf("  Removing deploy keys...")
+	github.RemoveAllDeployKeys(org, name)
+	green.Println(" ✓")
+
 	fmt.Printf("  Deleting GitHub repo...")
 	if err := github.DeleteRepo(org, name); err != nil {
 		yellow.Printf(" ⚠ %v (skipping)\n", err)

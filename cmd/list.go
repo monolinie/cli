@@ -42,7 +42,6 @@ func runList(cmd *cobra.Command, args []string) error {
 
 	bold := color.New(color.Bold)
 	dim := color.New(color.FgHiBlack)
-	domain := config.Get("domain")
 
 	bold.Printf("\n  %-20s %-12s %-12s %s\n", "NAME", "APPS", "DATABASES", "URL")
 	dim.Println("  " + "────────────────────────────────────────────────────────────────")
@@ -50,13 +49,23 @@ func runList(cmd *cobra.Command, args []string) error {
 	for _, p := range projects {
 		apps := 0
 		dbs := 0
+		var firstAppID string
 		for _, env := range p.Environments {
+			if firstAppID == "" && len(env.Applications) > 0 {
+				firstAppID = env.Applications[0].ApplicationID
+			}
 			apps += len(env.Applications)
 			dbs += len(env.Postgres)
 		}
 		url := ""
-		if domain != "" {
-			url = fmt.Sprintf("https://%s.preview.%s", p.Name, domain)
+		if firstAppID != "" {
+			if domains, err := dk.GetDomainsByApplication(firstAppID); err == nil && len(domains) > 0 {
+				scheme := "http"
+				if domains[0].HTTPS {
+					scheme = "https"
+				}
+				url = fmt.Sprintf("%s://%s", scheme, domains[0].Host)
+			}
 		}
 		fmt.Printf("  %-20s %-12d %-12d %s\n",
 			p.Name,
