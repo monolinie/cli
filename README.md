@@ -115,6 +115,7 @@ monolinie config set home_api_key your-api-key
 ### Flags
 
 - `new`: `--public` (public repo), `--no-db` (skip database), `--env <local|prod>` (home app environment, default: prod)
+- `sync`: `--prune` (remove orphaned projects from the home app database)
 - `logs`: `-n, --lines <N>` (last N lines)
 - `delete`: `-f, --force` (skip confirmation), `--all` (bulk delete by prefix), `--env <local|prod>` (home app environment, default: prod). Accepts multiple names: `ml delete ww11 ww1135`
 

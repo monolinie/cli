@@ -5,8 +5,11 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/monolinie/cli/internal/config"
+	"github.com/monolinie/cli/internal/home"
 	"github.com/spf13/cobra"
 )
+
+var flagPrune bool
 
 var syncCmd = &cobra.Command{
 	Use:   "sync <local|prod>",
@@ -17,6 +20,7 @@ var syncCmd = &cobra.Command{
 }
 
 func init() {
+	syncCmd.Flags().BoolVar(&flagPrune, "prune", false, "Remove orphaned projects from the home app")
 	rootCmd.AddCommand(syncCmd)
 }
 
@@ -57,9 +61,25 @@ func runSync(cmd *cobra.Command, args []string) error {
 	}
 
 	if len(result.Orphaned) > 0 {
-		yellow.Printf("  Orphaned %d project(s) (Dokploy project missing):\n", len(result.Orphaned))
-		for _, p := range result.Orphaned {
-			fmt.Printf("    ? %s (DB ID: %s, Dokploy ID: %s)\n", p.Name, p.ID, p.DokployProjectID)
+		if flagPrune {
+			yellow.Printf("  Pruning %d orphaned project(s):\n", len(result.Orphaned))
+			for _, p := range result.Orphaned {
+				_, err := hc.DeregisterProject(home.DeregisterInput{
+					DokployProjectID: p.DokployProjectID,
+					Name:             p.Name,
+				})
+				if err != nil {
+					fmt.Printf("    ✗ %s: %v\n", p.Name, err)
+				} else {
+					green.Printf("    - %s removed\n", p.Name)
+				}
+			}
+		} else {
+			yellow.Printf("  Orphaned %d project(s) (Dokploy project missing):\n", len(result.Orphaned))
+			for _, p := range result.Orphaned {
+				fmt.Printf("    ? %s (DB ID: %s, Dokploy ID: %s)\n", p.Name, p.ID, p.DokployProjectID)
+			}
+			fmt.Println("  Run with --prune to remove them")
 		}
 	}
 
