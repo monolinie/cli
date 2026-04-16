@@ -1,8 +1,8 @@
 # monolinie
 
-CLI tool for automating project setup in the Monolinie studio.
+CLI tool for automating project setup and management in the Monolinie studio.
 
-One command to go from zero to a fully deployed Next.js app with a GitHub repo, PostgreSQL database, DNS, and HTTPS.
+One command to go from zero to a fully deployed Next.js app with a GitHub repo, PostgreSQL database, DNS, and HTTPS — plus commands to manage, monitor, and tear down projects.
 
 ## What it does
 
@@ -65,6 +65,14 @@ Options:
 - `--public` — create a public GitHub repo (default: private)
 - `--no-db` — skip PostgreSQL database creation
 
+### List all projects
+
+```bash
+monolinie list
+```
+
+Shows all projects deployed in Dokploy with app count, database count, and URLs.
+
 ### Check project status
 
 ```bash
@@ -72,6 +80,79 @@ monolinie status my-app
 ```
 
 Checks DNS resolution and HTTPS availability for the project.
+
+### View deployment logs
+
+```bash
+monolinie logs my-app
+```
+
+Shows the latest deployment log. Options:
+- `-n, --lines <N>` — show only the last N lines
+
+### Redeploy a project
+
+```bash
+monolinie redeploy my-app
+```
+
+Triggers a fresh deployment without changing anything else.
+
+### Manage environment variables
+
+```bash
+# List all env vars
+monolinie env list my-app
+
+# Get a single env var
+monolinie env get my-app DATABASE_URL
+
+# Set env vars (one or more KEY=VALUE pairs)
+monolinie env set my-app NODE_ENV=production DEBUG=true
+```
+
+Sensitive values (keys, tokens, passwords) are masked in the output.
+
+After setting variables, run `monolinie redeploy my-app` to apply changes.
+
+### Manage domains
+
+```bash
+# List domains for a project
+monolinie domain list my-app
+
+# Add a domain (creates DNS record + configures HTTPS)
+monolinie domain add my-app custom.your-domain.com
+
+# Remove a domain (removes from Dokploy + deletes DNS record)
+monolinie domain remove my-app custom.your-domain.com
+```
+
+When adding a domain under your configured base domain, the CLI automatically creates the DNS A record and waits for propagation before configuring HTTPS with Let's Encrypt.
+
+### Open project in browser
+
+```bash
+monolinie open my-app
+```
+
+Opens the project URL in your default browser.
+
+### Delete a project
+
+```bash
+monolinie delete my-app
+```
+
+Tears down everything:
+- Removes the Dokploy project and all services
+- Deletes the DNS record
+- Deletes the GitHub repository
+
+Options:
+- `-f, --force` — skip confirmation prompt
+
+You will be asked to type the project name to confirm unless `--force` is used.
 
 ## Requirements
 

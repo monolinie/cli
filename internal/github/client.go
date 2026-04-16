@@ -127,6 +127,16 @@ func removeDeployKeyFromOrg(org, publicKey string) error {
 	return fmt.Errorf("deploy key not found on any repo in %s", org)
 }
 
+// DeleteRepo deletes a GitHub repository using the gh CLI.
+func DeleteRepo(org, name string) error {
+	cmd := exec.Command("gh", "repo", "delete", org+"/"+name, "--yes")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("gh repo delete: %s\n%s", err, string(output))
+	}
+	return nil
+}
+
 // CommitAndPush stages all files, commits, and pushes to the remote.
 func CommitAndPush(dir, message string) error {
 	commands := [][]string{

@@ -78,6 +78,33 @@ type createRecordRequest struct {
 	Records []recordValue `json:"records"`
 }
 
+// DeleteRecord deletes all records matching the given name and type in a zone.
+func (c *Client) DeleteRecord(zoneID int, recordType, name string) error {
+	url := fmt.Sprintf("%s/zones/%d/rrsets/%s/%s", baseURL, zoneID, name, recordType)
+	req, err := http.NewRequest("DELETE", url, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", "Bearer "+c.Token)
+
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return fmt.Errorf("delete record: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("API error (status %d): %s", resp.StatusCode, string(body))
+	}
+
+	return nil
+}
+
 func (c *Client) CreateRecord(zoneID int, recordType, name, value string, ttl int) error {
 	payload := createRecordRequest{
 		Name: name,
