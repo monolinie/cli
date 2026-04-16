@@ -190,7 +190,7 @@ func runNew(cmd *cobra.Command, args []string) error {
 	// Step 10: Wait for DNS propagation, then configure domain + certificate
 	fmt.Printf("  Waiting for DNS propagation...")
 	if err := waitForDNS(previewHost, serverIP, 3*time.Minute); err != nil {
-		return fmt.Errorf("DNS propagation failed: %w — try again later with: monolinie domain %s", err, name)
+		return fmt.Errorf("DNS propagation failed: %w — try again later with: ml domain %s", err, name)
 	}
 	green.Println(" ✓")
 

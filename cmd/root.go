@@ -8,7 +8,7 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "monolinie",
+	Use:   "ml",
 	Short: "Monolinie studio CLI",
 	Long:  "CLI tool for automating project setup in the Monolinie studio.",
 }
