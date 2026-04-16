@@ -5,15 +5,14 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/monolinie/cli/internal/config"
-	"github.com/monolinie/cli/internal/home"
 	"github.com/spf13/cobra"
 )
 
 var syncCmd = &cobra.Command{
-	Use:   "sync",
+	Use:   "sync <local|prod>",
 	Short: "Sync Dokploy projects with the home app database",
 	Long:  "Reconcile Dokploy projects with the home app database. Creates missing records and reports orphaned ones.",
-	Args:  cobra.NoArgs,
+	Args:  cobra.ExactArgs(1),
 	RunE:  runSync,
 }
 
@@ -26,19 +25,16 @@ func runSync(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	homeURL := config.Get("home_url")
-	homeKey := config.Get("home_api_key")
-	if homeURL == "" || homeKey == "" {
-		return fmt.Errorf("home_url and home_api_key must be configured\nRun:\n  monolinie config set home_url <url>\n  monolinie config set home_api_key <key>")
+	hc, err := resolveHomeClient(args[0])
+	if err != nil {
+		return err
 	}
 
 	bold := color.New(color.Bold)
 	green := color.New(color.FgGreen)
 	yellow := color.New(color.FgYellow)
 
-	bold.Println("\n→ Syncing with home app...")
-
-	hc := home.NewClient(homeURL, homeKey)
+	bold.Printf("\n→ Syncing with home app (%s)...\n", args[0])
 	result, err := hc.Sync()
 	if err != nil {
 		return fmt.Errorf("sync failed: %w", err)

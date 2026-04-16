@@ -5,7 +5,9 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/monolinie/cli/internal/config"
 	"github.com/monolinie/cli/internal/dokploy"
+	"github.com/monolinie/cli/internal/home"
 )
 
 var validProjectName = regexp.MustCompile(`^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$`)
@@ -53,4 +55,17 @@ func findAppInProject(project *dokploy.ProjectDetail, appName string) (*dokploy.
 		return nil, fmt.Errorf("application %q not found in project %q", appName, project.Name)
 	}
 	return nil, fmt.Errorf("no applications found in project %q", project.Name)
+}
+
+// resolveHomeClient returns a home.Client for the given environment ("local" or "prod").
+func resolveHomeClient(env string) (*home.Client, error) {
+	if env != "local" && env != "prod" {
+		return nil, fmt.Errorf("invalid environment %q: must be \"local\" or \"prod\"", env)
+	}
+	url := config.Get("home_" + env + "_url")
+	key := config.Get("home_api_key")
+	if url == "" || key == "" {
+		return nil, fmt.Errorf("home_%s_url and home_api_key must be configured\nRun:\n  monolinie config set home_%s_url <url>\n  monolinie config set home_api_key <key>", env, env)
+	}
+	return home.NewClient(url, key), nil
 }

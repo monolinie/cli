@@ -16,8 +16,9 @@ import (
 )
 
 var (
-	flagForce bool
-	flagAll   bool
+	flagForce    bool
+	flagAll      bool
+	flagDeleteEnv string
 )
 
 var deleteCmd = &cobra.Command{
@@ -35,6 +36,7 @@ Use --all to delete all projects matching a prefix:
 func init() {
 	deleteCmd.Flags().BoolVarP(&flagForce, "force", "f", false, "Skip confirmation prompt")
 	deleteCmd.Flags().BoolVar(&flagAll, "all", false, "Delete all projects matching the prefix")
+	deleteCmd.Flags().StringVar(&flagDeleteEnv, "env", "prod", "Home app environment (local or prod)")
 	rootCmd.AddCommand(deleteCmd)
 }
 
@@ -188,10 +190,7 @@ func deleteProject(name, projectID string, dk *dokploy.Client) error {
 	}
 
 	// Deregister from home app (non-fatal)
-	homeURL := config.Get("home_url")
-	homeKey := config.Get("home_api_key")
-	if homeURL != "" && homeKey != "" {
-		hc := home.NewClient(homeURL, homeKey)
+	if hc, err := resolveHomeClient(flagDeleteEnv); err == nil {
 		_, err := hc.DeregisterProject(home.DeregisterInput{
 			DokployProjectID: projectID,
 			Name:             name,

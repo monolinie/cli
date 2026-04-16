@@ -23,6 +23,7 @@ import (
 var (
 	flagNoDB   bool
 	flagPublic bool
+	flagNewEnv string
 )
 
 var newCmd = &cobra.Command{
@@ -36,6 +37,7 @@ var newCmd = &cobra.Command{
 func init() {
 	newCmd.Flags().BoolVar(&flagNoDB, "no-db", false, "Skip database creation")
 	newCmd.Flags().BoolVar(&flagPublic, "public", false, "Create a public GitHub repo")
+	newCmd.Flags().StringVar(&flagNewEnv, "env", "prod", "Home app environment (local or prod)")
 	rootCmd.AddCommand(newCmd)
 }
 
@@ -217,10 +219,7 @@ func runNew(cmd *cobra.Command, args []string) error {
 	fmt.Println()
 
 	// Register with home app (non-fatal)
-	homeURL := config.Get("home_url")
-	homeKey := config.Get("home_api_key")
-	if homeURL != "" && homeKey != "" {
-		hc := home.NewClient(homeURL, homeKey)
+	if hc, err := resolveHomeClient(flagNewEnv); err == nil {
 		_, err := hc.RegisterProject(home.RegisterInput{
 			Name:              name,
 			Subdomain:         name,

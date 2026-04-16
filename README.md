@@ -83,13 +83,40 @@ monolinie config get github-org
 | `monolinie domain add <name> <domain>`    | Add domain (DNS + HTTPS)                          |
 | `monolinie domain remove <name> <domain>` | Remove domain and DNS record                      |
 | `monolinie open <name>`                   | Open project URL in browser                       |
+| `monolinie sync <local\|prod>`            | Sync Dokploy projects with the home app database  |
 | `monolinie delete <name>`                 | Delete project and all resources                  |
+
+### Home app environments
+
+The `sync` command requires an environment argument, while `new` and `delete` accept an optional `--env` flag (defaults to `prod`):
+
+```bash
+# Sync with local dev server
+ml sync local    # → http://localhost:3000
+
+# Sync with production
+ml sync prod     # → https://preview.monolinie.com
+
+# Create project and register with local home app
+ml new my-app --env local
+
+# Delete project and deregister from local home app
+ml delete my-app --env local
+```
+
+URLs are configurable:
+
+```bash
+monolinie config set home_local_url http://localhost:3000
+monolinie config set home_prod_url https://preview.monolinie.com
+monolinie config set home_api_key your-api-key
+```
 
 ### Flags
 
-- `new`: `--public` (public repo), `--no-db` (skip database)
+- `new`: `--public` (public repo), `--no-db` (skip database), `--env <local|prod>` (home app environment, default: prod)
 - `logs`: `-n, --lines <N>` (last N lines)
-- `delete`: `-f, --force` (skip confirmation), `--all` (bulk delete by prefix)
+- `delete`: `-f, --force` (skip confirmation), `--all` (bulk delete by prefix), `--env <local|prod>` (home app environment, default: prod)
 
 ## Requirements
 

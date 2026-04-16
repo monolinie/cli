@@ -15,7 +15,8 @@ var configKeys = []string{
 	"github_org",
 	"domain",
 	"dokploy_server_ip",
-	"home_url",
+	"home_local_url",
+	"home_prod_url",
 	"home_api_key",
 }
 
@@ -40,6 +41,8 @@ func Init() error {
 	viper.SetConfigFile(configFile)
 	viper.SetDefault("github_org", "monolinie")
 	viper.SetDefault("domain", "monolinie.com")
+	viper.SetDefault("home_local_url", "http://localhost:3000")
+	viper.SetDefault("home_prod_url", "https://preview.monolinie.com")
 
 	return viper.ReadInConfig()
 }
