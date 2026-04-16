@@ -2,6 +2,8 @@
 
 CLI tool for automating project setup and management in the Monolinie studio.
 
+> **Shorthand:** You can use `ml` as an abbreviation for `monolinie` in all commands, e.g. `ml new my-app` instead of `monolinie new my-app`.
+
 One command to go from zero to a fully deployed Next.js app with a GitHub repo, PostgreSQL database, DNS, and HTTPS — plus commands to manage, monitor, and tear down projects.
 
 ## What it does
@@ -30,6 +32,8 @@ Or build from source:
 git clone https://github.com/monolinie/cli.git
 cd cli
 go build -o monolinie .
+# Or build with the short name:
+go build -o ml .
 ```
 
 ## Configuration

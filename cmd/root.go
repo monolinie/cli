@@ -8,9 +8,10 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "monolinie",
-	Short: "Monolinie studio CLI",
-	Long:  "CLI tool for automating project setup in the Monolinie studio.",
+	Use:     "monolinie",
+	Aliases: []string{"ml"},
+	Short:   "Monolinie studio CLI",
+	Long:    "CLI tool for automating project setup in the Monolinie studio.",
 }
 
 func Execute() {
