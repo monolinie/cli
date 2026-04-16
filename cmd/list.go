@@ -48,14 +48,20 @@ func runList(cmd *cobra.Command, args []string) error {
 	dim.Println("  " + "────────────────────────────────────────────────────────────────")
 
 	for _, p := range projects {
+		apps := 0
+		dbs := 0
+		for _, env := range p.Environments {
+			apps += len(env.Applications)
+			dbs += len(env.Postgres)
+		}
 		url := ""
 		if domain != "" {
 			url = fmt.Sprintf("https://%s.preview.%s", p.Name, domain)
 		}
 		fmt.Printf("  %-20s %-12d %-12d %s\n",
 			p.Name,
-			len(p.Applications),
-			len(p.Postgres),
+			apps,
+			dbs,
 			url,
 		)
 	}

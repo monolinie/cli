@@ -27,13 +27,19 @@ type Project struct {
 	Name      string `json:"name"`
 }
 
+type EnvironmentDetail struct {
+	EnvironmentID string           `json:"environmentId"`
+	Name          string           `json:"name"`
+	Applications  []Application    `json:"applications"`
+	Postgres      []PostgresDetail `json:"postgres"`
+}
+
 type ProjectDetail struct {
-	ProjectID   string        `json:"projectId"`
-	Name        string        `json:"name"`
-	Description string        `json:"description"`
-	CreatedAt   string        `json:"createdAt"`
-	Applications []Application `json:"applications"`
-	Postgres    []PostgresDetail `json:"postgres"`
+	ProjectID    string              `json:"projectId"`
+	Name         string              `json:"name"`
+	Description  string              `json:"description"`
+	CreatedAt    string              `json:"createdAt"`
+	Environments []EnvironmentDetail `json:"environments"`
 }
 
 type PostgresDetail struct {

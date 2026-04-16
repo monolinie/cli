@@ -22,8 +22,10 @@ func findProjectByName(dk *dokploy.Client, name string) (*dokploy.ProjectDetail,
 
 // findAppInProject returns the first application in a project.
 func findAppInProject(project *dokploy.ProjectDetail) (*dokploy.Application, error) {
-	if len(project.Applications) == 0 {
-		return nil, fmt.Errorf("no applications found in project %q", project.Name)
+	for i := range project.Environments {
+		if len(project.Environments[i].Applications) > 0 {
+			return &project.Environments[i].Applications[0], nil
+		}
 	}
-	return &project.Applications[0], nil
+	return nil, fmt.Errorf("no applications found in project %q", project.Name)
 }
