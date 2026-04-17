@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/fatih/color"
@@ -107,7 +108,7 @@ func deleteByPrefix(dk *dokploy.Client, prefix string) error {
 	var failed []string
 	for _, p := range matched {
 		bold.Printf("\n→ Deleting %s...\n", p.Name)
-		if err := deleteProject(p.Name, p.ProjectID, dk); err != nil {
+		if err := deleteProject(&p, dk); err != nil {
 			color.Red("  ✗ Failed to fully delete %s: %v", p.Name, err)
 			failed = append(failed, p.Name)
 		}
@@ -155,7 +156,7 @@ func deleteMultiple(dk *dokploy.Client, names []string) error {
 			continue
 		}
 		bold.Printf("\n→ Deleting %s...\n", name)
-		if err := deleteProject(name, project.ProjectID, dk); err != nil {
+		if err := deleteProject(project, dk); err != nil {
 			color.Red("  ✗ Failed to fully delete %s: %v", name, err)
 			failed = append(failed, name)
 		}
@@ -194,18 +195,38 @@ func deleteSingle(dk *dokploy.Client, name string) error {
 	}
 
 	bold.Printf("\n→ Deleting %s...\n", name)
-	deleteProject(name, project.ProjectID, dk)
+	deleteProject(project, dk)
 
 	fmt.Println()
 	color.New(color.FgGreen).Printf("  Project %q has been deleted.\n\n", name)
 	return nil
 }
 
-func deleteProject(name, projectID string, dk *dokploy.Client) error {
+func deleteProject(project *dokploy.ProjectDetail, dk *dokploy.Client) error {
+	name := project.Name
+	projectID := project.ProjectID
 	org := config.Get("github_org")
 	domain := config.Get("domain")
 	green := color.New(color.FgGreen)
 	yellow := color.New(color.FgYellow)
+
+	// Fetch full project detail to get Docker Swarm service names
+	// (the list endpoint may not populate nested AppName fields)
+	var serviceNames []string
+	if full, err := dk.GetProject(projectID); err == nil {
+		for _, env := range full.Environments {
+			for _, app := range env.Applications {
+				if app.AppName != "" {
+					serviceNames = append(serviceNames, app.AppName)
+				}
+			}
+			for _, pg := range env.Postgres {
+				if pg.AppName != "" {
+					serviceNames = append(serviceNames, pg.AppName)
+				}
+			}
+		}
+	}
 
 	// Step 1: Remove Dokploy project
 	fmt.Printf("  Removing Dokploy project...")
@@ -252,6 +273,29 @@ func deleteProject(name, projectID string, dk *dokploy.Client) error {
 			yellow.Printf("  ⚠ Failed to deregister from home app: %v\n", err)
 		} else {
 			green.Println("  ✓ Deregistered from home app")
+		}
+	}
+
+	// Clean up orphaned Docker Swarm services and volumes
+	if len(serviceNames) > 0 {
+		serverIP := config.Get("dokploy_server_ip")
+		if serverIP == "" {
+			yellow.Println("  ⚠ dokploy_server_ip not configured, skipping Docker cleanup")
+		} else {
+			fmt.Printf("  Cleaning up Docker services...")
+			// Build volume names (<appName>-data) for explicit removal
+			var volumeNames []string
+			for _, s := range serviceNames {
+				volumeNames = append(volumeNames, s+"-data")
+			}
+			rmCmd := "docker service rm " + strings.Join(serviceNames, " ") + " 2>/dev/null; " +
+				"for i in 1 2 3 4 5; do sleep 3; docker volume rm " + strings.Join(volumeNames, " ") + " 2>/dev/null; done; " +
+				"docker system prune -af > /dev/null 2>&1"
+			if out, err := exec.Command("ssh", "-o", "StrictHostKeyChecking=accept-new", "root@"+serverIP, rmCmd).CombinedOutput(); err != nil {
+				yellow.Printf(" ⚠ %s (non-fatal)\n", strings.TrimSpace(string(out)))
+			} else {
+				green.Println(" ✓")
+			}
 		}
 	}
 
